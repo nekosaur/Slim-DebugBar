@@ -12,10 +12,9 @@ class AssetController extends Controller
      *
      * @param  Request $request
      * @param  Response $response
-     * @param  array $args
      * @return ResponseInterface
      */
-    public function js(Request $request, Response $response, $args)
+    public function js(Request $request, Response $response)
     {
         $renderer = $this->debugbar->getJavascriptRenderer();
 
@@ -31,10 +30,9 @@ class AssetController extends Controller
      * 
      * @param  Request $request
      * @param  Response $response
-     * @param  array $args
      * @return ResponseInterface
      */
-    public function css(Request $request, Response $response, $args)
+    public function css(Request $request, Response $response)
     {
         $renderer = $this->debugbar->getJavascriptRenderer();
 

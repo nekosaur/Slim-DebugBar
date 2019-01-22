@@ -7,53 +7,49 @@ use Kitchenu\Debugbar\Middleware\Debugbar;
 
 class MiddlewareTest extends SlimDebugBarTestCase
 {
-    /**
-     * @var \Slim\Container
-     */
-    protected $container;
-
-    public function setUp() {
-        parent::setUp();
-
-        $this->container = $this->app->getContainer();
-    }
-
     public function testDebugbarWithDefaultErrorHandler()
     {
-        $this->invokeDebugbarMiddleware();
+        foreach ($this->apps as $app) {
+            $c = $app->getContainer();
+            $this->invokeDebugbarMiddleware(
+                $c->get('request'),
+                $c->get('response'),
+                $c->get('debugbar'),
+                $c->get('errorHandler')
+            );
+        }
     }
 
     public function testDebugbarWithCustomErrorHandler()
     {
-        $this->container['errorHandler'] = function () {
-            return function ($request, $response, $e) {
-                return $response;
-            };
-        };
-
-        $this->invokeDebugbarMiddleware();
-    }
-
-    public function invokeDebugbarMiddleware()
-    {
-        $debugbar = new Debugbar(
-            $this->container->debugbar,
-            $this->container->errorHandler
-        );
-
-        try {
-            $debugbar(
-                $this->container->request,
-                $this->container->response,
-                function () {
-                    throw new Exception('test');
+        foreach ($this->apps as $app) {
+            $c = $app->getContainer();
+            $this->invokeDebugbarMiddleware(
+                $c->get('request'),
+                $c->get('response'),
+                $c->get('debugbar'),
+                function ($request, $response, $e) {
+                    return $response;
                 }
             );
-        } catch (Exception $e) {
-            $collector = $this->debugbar->getCollector('exceptions');
-            $exception = $collector->getExceptions()[0];
-
-            $this->assertEquals($exception->getMessage(), 'test');
         }
+    }
+
+    public function invokeDebugbarMiddleware($request, $response, $debugbar, $errorHandler)
+    {
+        $debugbarMiddleware = new Debugbar($debugbar, $errorHandler);
+
+        $debugbarMiddleware(
+            $request,
+            $response,
+            function () {
+                throw new Exception('test');
+            }
+        );
+
+        $collector = $debugbar->getCollector('exceptions');
+        $exception = $collector->getExceptions()[0];
+
+        $this->assertEquals($exception->getMessage(), 'test');
     }
 }

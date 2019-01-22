@@ -9,28 +9,40 @@ class JavascriptRendererTest extends SlimDebugBarTestCase
     /**
      * @var JavascriptRenderer
      */
-    protected $renderer;
+    // protected $renderer;
 
-    public function setUp()
-    {
-        parent::setUp();
-        $this->renderer = new JavascriptRenderer($this->debugbar);
-    }
+    // public function setUp()
+    // {
+    //     parent::setUp();
+    //     $this->renderer = new JavascriptRenderer($this->debugbar);
+    // }
 
     public function testRenderHeadSlim()
     {
-        $this->app->get('css_test', function() {})->setName('debugbar-assets-css');
-        $this->app->get('js_test', function() {})->setName('debugbar-assets-js');
-        $html = $this->renderer->renderHeadSlim($this->app->getContainer()->router);
- 
-        $this->assertContains('<link rel="stylesheet" type="text/css" href="css_test', $html);
-        $this->assertContains('<script type="text/javascript" src="js_test', $html);
-        $this->assertContains('<script type="text/javascript" src="js_test', $html);
+        foreach ($this->apps as $app) {
+            $renderer = new JavascriptRenderer($app->getContainer()->get('debugbar'));
+
+            $router = $app->getContainer()->get('router');
+            $router->removeNamedRoute('debugbar-assets-css');
+            $router->removeNamedRoute('debugbar-assets-js');
+
+            $app->get('css_test', function() {})->setName('debugbar-assets-css');
+            $app->get('js_test', function() {})->setName('debugbar-assets-js');
+
+            $html = $renderer->renderHeadSlim($router);
+     
+            $this->assertContains('<link rel="stylesheet" type="text/css" href="css_test', $html);
+            $this->assertContains('<script type="text/javascript" src="js_test', $html);
+            $this->assertContains('<script type="text/javascript" src="js_test', $html);
+        }
     }
 
     public function testDumpAssetsToString()
     {
-        $string = $this->renderer->dumpAssetsToString('css');
-        $this->assertContains('@font-face', $string);
+        foreach ($this->apps as $app) {
+            $renderer = new JavascriptRenderer($app->getContainer()->get('debugbar'));
+            $string = $renderer->dumpAssetsToString('css');
+            $this->assertContains('@font-face', $string);
+        }
     }
 }

@@ -5,28 +5,18 @@ namespace Kitchenu\Debugbar\Tests;
 use Slim\App;
 use Kitchenu\Debugbar\SlimDebugBar;
 use PHPUnit_Framework_TestCase;
+use Kitchenu\Debugbar\PimpleServiceProvider;
+use Kitchenu\Debugbar\PhpDiServiceProvider;
 
-abstract class SlimDebugBarTestCase  extends PHPUnit_Framework_TestCase
+abstract class SlimDebugBarTestCase extends PHPUnit_Framework_TestCase
 {
     /**
-     * @var App
+     * @var App[]
      */
-    protected $app;
-
-    /**
-     * @var SlimDebugBar
-     */
-    protected $debugbar;
+    protected $apps;
 
     public function setUp()
     {
-        $this->app = new App([
-            'settings' => [
-                'displayErrorDetails' => true,
-            ]
-        ]);
-        $container = $this->app->getContainer();
-        
         $settings = [
             'storage' => [
                 'enabled' => true,
@@ -44,6 +34,23 @@ abstract class SlimDebugBarTestCase  extends PHPUnit_Framework_TestCase
                 'request'    => true,  // Request logger
             ]
         ];
-        $this->debugbar = $container['debugbar'] = new SlimDebugBar($this->app->getContainer(), $settings);
+        
+
+        $pimpleServiceProvider = new PimpleServiceProvider($settings);
+        $phpDiServiceProvider = new PhpDiServiceProvider($settings);
+
+        $container = [
+            'settings' => [
+                'displayErrorDetails' => true,
+            ]
+        ];
+
+        $pimpleApp = new App($container);
+        $pimpleServiceProvider->register($pimpleApp);
+
+        $phpDiApp = new \DI\Bridge\Slim\App($container);
+        $phpDiServiceProvider->register($phpDiApp);
+
+        $this->apps = [$pimpleApp, $phpDiApp];
     }
 }

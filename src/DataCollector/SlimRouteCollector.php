@@ -5,7 +5,6 @@ namespace Kitchenu\Debugbar\DataCollector;
 use Closure;
 use DebugBar\DataCollector\DataCollector;
 use DebugBar\DataCollector\Renderable;
-use Interop\Container\ContainerInterface as Container;
 use Psr\Http\Message\ServerRequestInterface;
 use ReflectionFunction;
 use ReflectionMethod;
@@ -31,7 +30,8 @@ class SlimRouteCollector extends DataCollector implements Renderable
     protected $request;
 
     /**
-     * @param Container $container
+     * @param Router $router
+     * @param ServerRequestInterface $request
      */
     public function __construct(Router $router, Request $request)
     {

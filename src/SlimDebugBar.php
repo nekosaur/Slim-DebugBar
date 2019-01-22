@@ -15,16 +15,22 @@ use DebugBar\Storage\MemcachedStorage;
 use DebugBar\Storage\PdoStorage;
 use DebugBar\Storage\RedisStorage;
 use Exception;
-use Interop\Container\ContainerInterface as Container;
 use Kitchenu\Debugbar\DataCollector\SlimRouteCollector;
 use Psr\Http\Message\ResponseInterface as Response;
+use Slim\Router;
+use Psr\Http\Message\ServerRequestInterface;
 
 class SlimDebugBar extends DebugBar
 {
     /**
-     * @var Container
+     * @var Router
      */
-    protected $container;
+    protected $router;
+
+    /**
+     * @var ServerRequestInterface
+     */
+    protected $request;
 
     /**
      * @var array
@@ -49,12 +55,14 @@ class SlimDebugBar extends DebugBar
     ];
 
     /**
-     * @param Container $container
+     * @param Router $router
+     * @param ServerRequestInterface $request
      * @param array $settings
      */
-    public function __construct(Container $container, $settings)
+    public function __construct(Router $router, ServerRequestInterface $request, $settings)
     {
-        $this->container = $container;
+        $this->router = $router;
+        $this->request = $request;
         $this->settings = array_replace_recursive($this->settings, $settings);
 
         $storageSettings = $settings['storage'];
@@ -110,7 +118,7 @@ class SlimDebugBar extends DebugBar
 
         if ($collectorsSettings['route']) {
             $this->addCollector(
-                new SlimRouteCollector($container->router, $container->request)
+                new SlimRouteCollector($this->router, $this->request)
             );
         }
 
@@ -261,10 +269,7 @@ class SlimDebugBar extends DebugBar
      */
     protected function isDebugbarRequest()
     {
-        /** @var \Psr\Http\Message\RequestInterface $request */
-        $request = $this->container->get('request');
-
-        return preg_match('#^(\/|)_debugbar\/#', $request->getUri()->getPath());
+        return preg_match('#^(\/|)_debugbar\/#', $this->request->getUri()->getPath());
     }
 
     /**
@@ -286,18 +291,15 @@ class SlimDebugBar extends DebugBar
      */
     protected function isJsonRequest()
     {
-        /** @var \Psr\Http\Message\RequestInterface $request */
-        $request = $this->container->get('request');
-
         // If XmlHttpRequest, return true
-        if ($request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
+        if ($this->request->getHeaderLine('X-Requested-With') === 'XMLHttpRequest') {
             return true;
         }
 
         // Check if the request wants Json
         return (
-            $request->hasHeader('Content-Type') &&
-            $request->getHeader('Content-Type') == 'application/json'
+            $this->request->hasHeader('Content-Type') &&
+            $this->request->getHeader('Content-Type') == 'application/json'
         );
     }
 
@@ -308,17 +310,14 @@ class SlimDebugBar extends DebugBar
      */
     public function collect()
     {
-        /** @var \Psr\Http\Message\RequestInterface $request */
-        $request = $this->container->get('request');
-
         $this->data = [
             '__meta' => [
                 'id' => $this->getCurrentRequestId(),
                 'datetime' => date('Y-m-d H:i:s'),
                 'utime' => microtime(true),
-                'method' => $request->getMethod(),
-                'uri' => $request->getUri()->getPath(),
-                'ip' => $request->getUri()->getHost(),
+                'method' => $this->request->getMethod(),
+                'uri' => $this->request->getUri()->getPath(),
+                'ip' => $this->request->getUri()->getHost(),
             ]
         ];
 
@@ -352,17 +351,14 @@ class SlimDebugBar extends DebugBar
      */
     public function injectDebugbar(Response $response)
     {
-        /** @var Slim\Router $router */
-        $router = $this->container->get('router');
-
         $body = $response->getBody();
 
         $renderer = $this->getJavascriptRenderer();
         if ($this->getStorage()) {
-            $renderer->setOpenHandlerUrl($router->pathFor('debugbar-openhandler'));
+            $renderer->setOpenHandlerUrl($this->router->pathFor('debugbar-openhandler'));
         }
 
-        $renderedContent = $renderer->renderHeadSlim($router) . $renderer->render();
+        $renderedContent = $renderer->renderHeadSlim($this->router) . $renderer->render();
 
         $pos = strripos($body, '</body>');
         if ($pos !== false) {

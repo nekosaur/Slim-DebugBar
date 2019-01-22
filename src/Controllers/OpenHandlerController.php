@@ -15,11 +15,10 @@ class OpenHandlerController extends Controller
      *
      * @param  Request $request
      * @param  Response $response
-     * @param  array $args
      *
      * @return Response
      */
-    public function handle(Request $request, Response $response, $args)
+    public function handle(Request $request, Response $response)
     {
         $openHandler = new OpenHandler($this->debugbar);
 

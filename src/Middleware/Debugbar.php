@@ -45,7 +45,7 @@ class Debugbar
     public function __invoke($request, $response, $next)
     {
         try {
-            $response = $next($request, $response); 
+            $response = $next($request, $response);
         } catch (Exception $e) {
             $this->debugbar->addException($e);
             // Handle the given exception

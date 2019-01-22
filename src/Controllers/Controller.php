@@ -2,7 +2,7 @@
 
 namespace Kitchenu\Debugbar\Controllers;
 
-use Interop\Container\ContainerInterface as Container;
+use Psr\Container\ContainerInterface as Container;
 
 abstract class Controller
 {
